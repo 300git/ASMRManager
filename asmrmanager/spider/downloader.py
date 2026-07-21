@@ -179,23 +179,15 @@ class ASMRDownloadAPI(ASMRAPI):
         voice_info = await self.get_voice_info(voice_id)
         assert voice_info is not None, f"Failed to download voice {voice_id}"
 
-        should_down = self.json_should_download(voice_info)
-        if not should_down:
-            logger.info(f"stop download {voice_id}")
-            return
-        if save_path is None:
-            save_path = self.save_path
-
         assert (
             id2source_name(source_name2id(voice_info["source_id"]))
             == voice_info["source_id"]
         )
-        voice_path = save_path / voice_info["source_id"]
-        if voice_path.exists():
-            logger.warning(f"path {voice_path} already exists.")
 
-        voice_path.mkdir(parents=True, exist_ok=True)
-        self.create_info_file(voice_info, voice_path=voice_path)
+        should_down = self.json_should_download(voice_info)
+        if not should_down:
+            logger.info(f"stop download {voice_id}")
+            return
 
         tracks = await self.get_voice_tracks(voice_id)
         if tracks is None:
@@ -204,6 +196,17 @@ class ASMRDownloadAPI(ASMRAPI):
                 "failed to get tracks, skip download"
             )
             return
+
+        if save_path is None:
+            save_path = self.save_path
+
+        voice_path = save_path / voice_info["source_id"]
+        if voice_path.exists():
+            logger.warning(f"path {voice_path} already exists.")
+
+        voice_path.mkdir(parents=True, exist_ok=True)
+        self.create_info_file(voice_info, voice_path=voice_path)
+
 
         file_list_with_order = self.get_file_list(
             tracks,
